@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Basic CSV Example - Gridviz</title>
+    <title>Artificialisation - OCSGE 2021</title>
     <style>
         /* canvas {
             will-change: transform;
@@ -20,9 +20,9 @@
     <script>
         //define map with initial view
         const map = new gridviz.Map(document.getElementById('map'), {
-            x: 4500000,
-            y: 2900000,
-            z: 3000,
+            x: 3586000,
+            y: 2554000,
+            z: 1300,
         }).addZoomButtons()
 
         //define dataset
@@ -32,21 +32,85 @@
             1000
         )
 
-        //define color for each cell
-        const colorFunction = (cell) => {
-            if (cell.Artif > 16) return '#993404'
-            else if (cell.Artif > 8) return '#d95f0e'
-            else if (cell.Artif > 4) return '#fe9929'
-            else if (cell.Artif > 2) return '#fec44f'
-            else if (cell.Artif > 1) return '#fee391'
-            else return '#ffffd4'
-        }
+        const classifier = gridviz.colorClassifier(
+        //the class breaks
+        [1, 2, 4, 8, 16, 32, 64],
+        //the colors, for each class
+        [
+            'rgb(255, 255, 204)',
+            'rgb(255, 234, 154)',
+            'rgb(254, 205, 106)',
+            'rgb(254, 162, 70)',
+            'rgb(252, 105, 50)',
+            'rgb(233, 42, 33)',
+            'rgb(192, 6, 36)',
+            'rgb(128, 0, 38)',
+        ]
+    )
 
-        //define style
-        const style = new gridviz.ShapeColorSizeStyle({ color: colorFunction })
+    //define style, based on the classifier
+    const style = new gridviz.ShapeColorSizeStyle({
+        color: (cell) => classifier(cell.Artif),
+    })
 
-        //add layer to map
-        map.layers = [new gridviz.GridLayer(dataset, [style])]
+    //define legend
+    const legend = new gridviz.ColorDiscreteLegend({
+        title: 'Part d'artificialisation',
+        width: 450,
+        colors: () => classifier.colors,
+        breaks: () => classifier.breaks,
+        labelFormat: (text,i) => text+ (i==7?" %":"")
+    })
+
+    //link legend to style
+    style.legends = [legend]
+
+
+ const boundaryLayer = new gridviz.GeoJSONLayer({
+        url: 'https://raw.githubusercontent.com/eurostat/Nuts2json/master/pub/v2/2024/3035/03M/nutsbn_3.json',
+        color: (f, zoom) => {
+            const p = f.properties
+            if (p.co === 'T') return '#000'
+            if (zoom < 400) return '#000'
+            else if (zoom < 1000) return p.lvl >= 3 ? '' : '#000'
+            else if (zoom < 2000) return p.lvl >= 2 ? '' : '#000'
+            else return p.lvl >= 1 ? '' : '#888'
+        },
+        width: (f, zoom) => {
+            const p = f.properties
+            if (p.co === 'T') return 2
+            if (zoom < 400) return p.lvl == 3 ? 4 : p.lvl == 2 ? 4 : p.lvl == 1 ? 2.2 : 6
+            else if (zoom < 1000) return p.lvl == 2 ? 3 : p.lvl == 1 ? 1.8 : 3
+            else if (zoom < 2000) return p.lvl == 1 ? 2 : 3
+            else return 1.2
+        },
+        lineDash: (f, zoom) => {
+            const p = f.properties
+            if (p.co === 'T') return []
+            if (zoom < 400)
+                return p.lvl == 3
+                    ? [2 * zoom, 2 * zoom]
+                    : p.lvl == 2
+                    ? [5 * zoom, 2 * zoom]
+                    : p.lvl == 1
+                    ? [5 * zoom, 2 * zoom]
+                    : [10 * zoom, 3 * zoom]
+            else if (zoom < 1000)
+                return p.lvl == 2
+                    ? [5 * zoom, 2 * zoom]
+                    : p.lvl == 1
+                    ? [5 * zoom, 2 * zoom]
+                    : [10 * zoom, 3 * zoom]
+            else if (zoom < 2000) return p.lvl == 1 ? [5 * zoom, 2 * zoom] : [10 * zoom, 3 * zoom]
+            else return [10 * zoom, 3 * zoom]
+        },
+    })
+
+
+
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style]), boundaryLayer,]
     </script>
 </body>
 
