@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basic CSV Example - Gridviz</title>
+    <style>
+        /* canvas {
+            will-change: transform;
+            backface-visibility: hidden;
+        } */
+    </style>
+	<script src="https://unpkg.com/gridviz/dist/gridviz.min.js"></script>
+</head>
+
+<body>
+    <div id="map" style="height: 98vh; width: 100%; max-height: 100vh"></div>
+    <script src="../../dist/gridviz.js"></script>
+    <script>
+        //define map with initial view
+        const map = new gridviz.Map(document.getElementById('map'), {
+            x: 4500000,
+            y: 2900000,
+            z: 3000,
+        }).addZoomButtons()
+
+        //define dataset
+        const dataset = new gridviz.CSVGrid(
+            map,
+            'https://raw.githubusercontent.com/fsemecurbe/processing_ocsge/refs/heads/main/Artif.csv',
+            1000
+        )
+
+        //define color for each cell
+        const colorFunction = (cell) => {
+            if (cell.Artif > 16) return '#993404'
+            else if (cell.Artif > 8) return '#d95f0e'
+            else if (cell.Artif > 4) return '#fe9929'
+            else if (cell.Artif > 2) return '#fec44f'
+            else if (cell.Artif > 1) return '#fee391'
+            else return '#ffffd4'
+        }
+
+        //define style
+        const style = new gridviz.ShapeColorSizeStyle({ color: colorFunction })
+
+        //add layer to map
+        map.layers = [new gridviz.GridLayer(dataset, [style])]
+    </script>
+</body>
+
+</html>
