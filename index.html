@@ -4,20 +4,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Artificialisation : OCSGE 2021</title>
+    <title>Artificialisation - OCSGE 2021</title>
     <style>
         /* canvas {
             will-change: transform;
             backface-visibility: hidden;
         } */
     </style>
+	<script src="https://cdn.jsdelivr.net/npm/gridviz-parquet@1.1.1/dist/gridviz-parquet.js"></script>
 	<script src="https://unpkg.com/gridviz/dist/gridviz.min.js"></script>
 </head>
 
+
+
 <body>
     <div id="map" style="height: 98vh; width: 100%; max-height: 100vh"></div>
-    <script src="../../dist/gridviz.js"></script>
     <script>
+	
+	
+	
+	//debut
+	
+	    //define map with initial view
+   
+    //define multi res
+	
+	
+	
+	
+	
+	
+	
+	
+	
         //define map with initial view
         const map = new gridviz.Map(document.getElementById('map'), {
             x: 3586000,
@@ -26,15 +45,20 @@
         }).addZoomButtons()
 
         //define dataset
-        const dataset = new gridviz.CSVGrid(
-            map,
-            'https://raw.githubusercontent.com/fsemecurbe/processing_ocsge/refs/heads/main/Artif.csv',
-            1000
+		const files = ['https://www.data.gouv.fr/api/1/datasets/r/a7bb23d5-746f-4982-9cea-da47fc342c04', 'https://www.data.gouv.fr/api/1/datasets/r/ca166b21-6835-40b3-95b6-bb57de54c6cd']
+		
+		const dataset = new gridviz.MultiResolutionDataset(
+        //the resolutions
+        [200, 1000],
+        //the function returning each dataset from the resolution
+        resolution => new gviz_par.ParquetGrid(map,  files[[200, 1000].indexOf(resolution)] , resolution)
         )
-
+	
+	
+	
         const classifier = gridviz.colorClassifier(
         //the class breaks
-        [1, 2, 4, 8, 16, 32, 64],
+        [ 4, 8, 16, 32, 64, 75, 90],
         //the colors, for each class
         [
             '#1a9850',
@@ -50,15 +74,15 @@
 
     //define style, based on the classifier
     const style = new gridviz.ShapeColorSizeStyle({
-        color: (cell) => classifier(cell.Artif),
+        color: (cell) => classifier(cell.Artificialisation),
     })
 
     //define legend
     const legend = new gridviz.ColorDiscreteLegend({
-        title: "Part d'artificialisation",
+        title: 'Part d artificialisation',
         width: 450,
         colors: () => classifier.colors,
-        breaks: () => classifier.breaks,
+        breaks: () => classifier.breaks ,
         labelFormat: (text,i) => text+ (i==7?" %":"")
     })
 
@@ -115,7 +139,3 @@
 </body>
 
 </html>
-
-
-
-
