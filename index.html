@@ -150,16 +150,7 @@
         //the class breaks
         [ 4, 8, 16, 32, 64, 75, 90],
         //the colors, for each class
-        [
-            '#1a9850',
-            '#66bd63',
-            '#a6d96a',
-            '#d9ef8b',
-            '#fee08b',
-            '#fdae61',
-            '#f46d43',
-            '#d73027',
-        ]
+        ['#ffffcc','#ffeda0','#fed976','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026']
     )
 
     //define style, based on the classifier
@@ -169,7 +160,7 @@
 
     //define legend
     const legend_arti = new gridviz.ColorDiscreteLegend({
-        title: 'Part d artificialisation',
+        title: "Part d'artificialisation",
         width: 450,
         colors: () => classifier_arti.colors,
         breaks: () => classifier_arti.breaks ,
@@ -228,7 +219,12 @@
     const layCode = document.querySelector('input[name="layer"]:checked').value;
 
     map.layers = [
-        new gridviz.GridLayer(dataset, [layCode === 'artificialisation' ? style_arti : style_occsol]), 
+        new gridviz.GridLayer(dataset, [layCode === 'artificialisation' ? style_arti : style_occsol],
+            {
+                    minPixelsPerCell: 1.5,
+                    cellInfoHTML: (cell) => layCode === 'artificialisation' ? cell.Artificialisation : clcLabels[cell.max_cs],
+            }
+        ), 
         labelLayer
     ];
     map.redraw();
