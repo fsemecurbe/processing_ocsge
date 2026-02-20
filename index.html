@@ -19,6 +19,68 @@
 
 <body>
     <div id="map" style="height: 98vh; width: 100%; max-height: 100vh"></div>
+
+    <div
+            style="
+                position: absolute;
+                left: 20px;
+                top: 20px;
+                width: auto;
+                height: auto;
+                padding: 10px;
+                border: 0px;
+                border-radius: 5px;
+                background: #ffffffcc;
+                line-height: 1.6;
+                box-shadow: 5px 5px 5px grey;
+            "
+        >
+            <span style="font-size: 1.25em">
+                <div id="layer">
+                    
+                    <input type="radio" name="layer" id="artificialisation" value="artificialisation"  />
+                    <label for="artificialisation">Artificialisation</label>
+                    <br />
+                    <input type="radio" name="layer" id="occsol" value="occsol" checked/>
+                    <label for="occsol">Occupation du Sol</label>
+                 
+                    
+                </div>
+         
+                <hr />
+                Source: 
+                <br />
+                <a
+                    href="https://www.data.gouv.fr/datasets/territorialisation-des-donnees-ocs-ge-annee-2022"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Carroyage de l'OCS GE </a>
+                    
+            </span>
+        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <script>
 	
 	
@@ -49,14 +111,30 @@
 		
 		const dataset = new gridviz.MultiResolutionDataset(
         //the resolutions
-        [200, 1000],
+        [400, 2000],
         //the function returning each dataset from the resolution
-        resolution => new gviz_par.ParquetGrid(map,  files[[200, 1000].indexOf(resolution)] , resolution)
+        resolution => new gviz_par.ParquetGrid(map,  files[[400, 2000].indexOf(resolution)] , resolution/2)
         )
 	
+        const labelLayer = new gridviz.LabelLayer({
+        url: 'https://raw.githubusercontent.com/eurostat/euronym/main/pub/v3/UTF_LATIN/50/EUR.csv',
+        preprocess: (label) => {
+            //project from geo coordinates to ETRS89-LAEA
+            const p = proj([label.lon, label.lat])
+            label.x = p[0]
+            label.y = p[1]
+            delete label.lon
+            delete label.lat
+        },
+        style: (label, zoom) => {
+            if (label.rs < 0.9 * zoom) return
+            if (label.r1 < 0.9 * zoom) return '1em Arial'
+            return '1.5em Arial'
+        },
+    })
 	
 	
-        const classifier = gridviz.colorClassifier(
+        const classifier_arti = gridviz.colorClassifier(
         //the class breaks
         [ 4, 8, 16, 32, 64, 75, 90],
         //the colors, for each class
@@ -73,68 +151,81 @@
     )
 
     //define style, based on the classifier
-    const style = new gridviz.ShapeColorSizeStyle({
-        color: (cell) => classifier(cell.Artificialisation),
+    const style_arti = new gridviz.ShapeColorSizeStyle({
+        color: (cell) => classifier_arti(cell.Artificialisation),
     })
 
     //define legend
-    const legend = new gridviz.ColorDiscreteLegend({
+    const legend_arti = new gridviz.ColorDiscreteLegend({
         title: 'Part d artificialisation',
         width: 450,
-        colors: () => classifier.colors,
-        breaks: () => classifier.breaks ,
+        colors: () => classifier_arti.colors,
+        breaks: () => classifier_arti.breaks ,
         labelFormat: (text,i) => text+ (i==7?" %":"")
     })
 
     //link legend to style
-    style.legends = [legend]
+    style_arti.legends = [legend_arti]
 
 
- const boundaryLayer = new gridviz.GeoJSONLayer({
-        url: 'https://raw.githubusercontent.com/eurostat/Nuts2json/master/pub/v2/2024/3035/03M/nutsbn_3.json',
-        color: (f, zoom) => {
-            const p = f.properties
-            if (p.co === 'T') return '#000'
-            if (zoom < 400) return '#000'
-            else if (zoom < 1000) return p.lvl >= 3 ? '' : '#000'
-            else if (zoom < 2000) return p.lvl >= 2 ? '' : '#000'
-            else return p.lvl >= 1 ? '' : '#888'
-        },
-        width: (f, zoom) => {
-            const p = f.properties
-            if (p.co === 'T') return 2
-            if (zoom < 400) return p.lvl == 3 ? 4 : p.lvl == 2 ? 4 : p.lvl == 1 ? 2.2 : 6
-            else if (zoom < 1000) return p.lvl == 2 ? 3 : p.lvl == 1 ? 1.8 : 3
-            else if (zoom < 2000) return p.lvl == 1 ? 2 : 3
-            else return 1.2
-        },
-        lineDash: (f, zoom) => {
-            const p = f.properties
-            if (p.co === 'T') return []
-            if (zoom < 400)
-                return p.lvl == 3
-                    ? [2 * zoom, 2 * zoom]
-                    : p.lvl == 2
-                    ? [5 * zoom, 2 * zoom]
-                    : p.lvl == 1
-                    ? [5 * zoom, 2 * zoom]
-                    : [10 * zoom, 3 * zoom]
-            else if (zoom < 1000)
-                return p.lvl == 2
-                    ? [5 * zoom, 2 * zoom]
-                    : p.lvl == 1
-                    ? [5 * zoom, 2 * zoom]
-                    : [10 * zoom, 3 * zoom]
-            else if (zoom < 2000) return p.lvl == 1 ? [5 * zoom, 2 * zoom] : [10 * zoom, 3 * zoom]
-            else return [10 * zoom, 3 * zoom]
-        },
-    })
+    /// pour l occupation du sol
+    
+     const clcColors = {
+                'CS1_1_1_1': '#ff397a',
+                'CS1_1_1_2': '#ff9190',
+                'CS1_1_2_1': '#feff99',
+                'CS1_1_2_2': '#a84c01',
+                'CS1_2_1': '#cccccc',
+                'CS1_2_2': '#00c7ec',
+                'CS1_2_3': '#a7e7cd',
+                'CS2_1_1_1': '#81fe00',
+                'CS2_1_1_2': '#00a701',
+                'CS2_1_1_3': '#81be01',
+                'CS2_1_2': '#a6ff81',
+                'CS2_1_3': '#e78200',
+                'CS2_2_1': '#ccf14c',
+                'CS2_2_2': '#cdffcc'
+               
+            }
+
+    const clcLabels = {
+                'CS1_1_1_1': 'Zones Bâties',
+                'CS1_1_1_2': 'Zones non bâties',
+                'CS1_1_2_1': 'Matériaux minéraux',
+                'CS1_1_2_2': 'Matériaux composites',
+                'CS1_2_1': 'Sols nus',
+                'CS1_2_2': "Surfaces d'eau",
+                'CS1_2_3': 'Névés et glaciers',
+                'CS2_1_1_1': 'Feuillus',
+                'CS2_1_1_2': 'Conifères',
+                'CS2_1_1_3': 'Mixte',
+                'CS2_1_2': 'Formations arbustives, sous-arbrisseaux',
+                'CS2_1_3': 'Autres formations ligneuses',
+                'CS2_2_1': 'Formations herbacées',
+                'CS2_2_2': 'Autres formations non ligneuses'
+
+    }
+
+    const style_occsol = new gridviz.SquareColorCategoryWebGLStyle({
+                code: (cell) => cell.max_cs,
+                color: clcColors,
+            })        
 
 
+    const update = () => {
+    const layCode = document.querySelector('input[name="layer"]:checked').value;
 
-
-    //add layer to map
-    map.layers = [new gridviz.GridLayer(dataset, [style]), boundaryLayer,]
+    map.layers = [
+        new gridviz.GridLayer(dataset, [layCode === 'artificialisation' ? style_arti : style_occsol]), 
+        labelLayer
+    ];
+    map.redraw();
+};
+    
+    update()
+    document.querySelectorAll('input[name="layer"]').forEach(radio => {
+        radio.addEventListener('change', update);
+    });
     </script>
 </body>
 
